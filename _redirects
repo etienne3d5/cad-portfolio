@@ -1,0 +1,7 @@
+# Serve static files directly (don't redirect to index.html)
+/models/* 200
+/images/* 200
+/chili3d/* 200
+
+# Everything else goes to index.html for SPA routing
+/* /index.html 200
