@@ -142,7 +142,7 @@
             const modelUrl = baseUrl + modelPath;
             
             // Load Chili3D iframe with theme parameter
-            const chiliUrl = baseUrl + 'chili3d/index.html?theme=' + themeParam;
+            const chiliUrl = baseUrl + 'chili3d/index.html?theme=' + themeParam + '&url=' + encodeURIComponent(modelUrl);
             iframe.src = chiliUrl;
             
             statusText.innerHTML = 'Loading Chili3D viewer...';
