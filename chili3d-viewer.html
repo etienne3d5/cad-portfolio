@@ -82,6 +82,14 @@
         body.dark-mode .status-text {
             color: #aaa;
         }
+        .success-message {
+            color: #10b981;
+            font-weight: 600;
+        }
+        .error-message {
+            color: #ef4444;
+            font-weight: 600;
+        }
         .fade-out {
             animation: fadeOut 0.5s ease-out forwards;
         }
@@ -124,31 +132,66 @@
             modelTitle.textContent = 'Error: No model specified';
             modelFilename.textContent = 'Please return to gallery';
             statusText.innerHTML = '✗ No model path provided';
-            statusText.style.color = '#ef4444';
+            statusText.className = 'status-text error-message';
         } else {
             const fileName = modelPath.split('/').pop();
             modelFilename.textContent = fileName;
             
-            // Get base URL and construct paths
+            // Get base URL and construct full model URL
             const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
             const modelUrl = baseUrl + modelPath;
             
-            // Load Chili3D with autoload parameter
-            const chiliUrl = baseUrl + 'chili3d/index.html?autoload=' + encodeURIComponent(modelUrl) + '&theme=' + themeParam;
+            // Load Chili3D iframe with theme parameter
+            const chiliUrl = baseUrl + 'chili3d/index.html?theme=' + themeParam;
+            iframe.src = chiliUrl;
             
             statusText.innerHTML = 'Loading Chili3D viewer...';
             
-            // Set iframe source
-            iframe.src = chiliUrl;
+            let chiliReady = false;
             
-            // Simple timeout to hide loading overlay
-            // Chili3D's autoload will handle the actual model loading
+            // Listen for messages from Chili3D
+            window.addEventListener('message', (event) => {
+                console.log('Message received:', event.data);
+                
+                if (event.data.type === 'chili3d-ready') {
+                    chiliReady = true;
+                    console.log('✅ Chili3D is ready, sending load command...');
+                    statusText.innerHTML = 'Loading 3D model...';
+                    
+                    // Send load-from-url command to Chili3D
+                    iframe.contentWindow.postMessage({
+                        type: 'load-from-url',
+                        url: modelUrl
+                    }, '*');
+                    
+                } else if (event.data.type === 'model-loaded') {
+                    console.log('✅ Model loaded successfully!');
+                    statusText.innerHTML = '✓ Model loaded successfully!';
+                    statusText.className = 'status-text success-message';
+                    setTimeout(() => {
+                        loadOverlay.classList.add('fade-out');
+                        setTimeout(() => {
+                            loadOverlay.style.display = 'none';
+                        }, 500);
+                    }, 800);
+                    
+                } else if (event.data.type === 'load-error') {
+                    console.error('❌ Load error:', event.data.error);
+                    statusText.innerHTML = `✗ Error: ${event.data.error}`;
+                    statusText.className = 'status-text error-message';
+                }
+            });
+            
+            // Fallback timeout
             setTimeout(() => {
-                loadOverlay.classList.add('fade-out');
-                setTimeout(() => {
-                    loadOverlay.style.display = 'none';
-                }, 500);
-            }, 3000); // Give it 3 seconds to load
+                if (!chiliReady) {
+                    console.log('Timeout: Chili3D not responding, trying to send command anyway...');
+                    iframe.contentWindow.postMessage({
+                        type: 'load-from-url',
+                        url: modelUrl
+                    }, '*');
+                }
+            }, 6000);
         }
     </script>
 </body>
