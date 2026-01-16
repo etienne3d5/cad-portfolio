@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="description" content="A web-based 3D CAD application for online model design and editing" />
+        <meta name="description" content="一款基于网页的在线模型设计与编辑 3D CAD 应用程序" />
+        <meta name="keywords" content="Web CAD, WebAssembly, WASM, Three.js, OCCT, Opencascade, 3D CAD, 在线 CAD, 在线建模" />
+        <meta name="author" content="仙阁" />
+        <title>Chili3D - Web-based 3D CAD application</title>
+        <link rel="icon" href="favicon.svg">
+        <link rel="stylesheet" type="text/css" href="index.css" />
+        <script type="text/javascript">
+            (function(c,l,a,r,i,t,y){
+                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+            })(window, document, "clarity", "script", "k1qrtibhcl");
+        </script>
+    </head>
+    <body>
+        <noscript>You need to enable JavaScript to run this app.</noscript>
+        <!-- Viewer Mode Script -->
+        <script src="viewer-mode.js"></script>
+        
+        <!-- URL-based file loading script -->
+        <script>
+            (function() {
+                'use strict';
+                
+                console.log('Chili3D URL loader initialized');
+                
+                // Get theme from URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const themeFromUrl = urlParams.get('theme') || 'light';
+                console.log('Theme from URL:', themeFromUrl);
+                
+                // Listen for messages from parent window
+                window.addEventListener('message', async (event) => {
+                    console.log('Received message:', event.data);
+                    
+                    if (event.data.type === 'load-from-url' && event.data.url) {
+                        console.log('Load from URL command received:', event.data.url);
+                        
+                        try {
+                            // Wait a bit to make sure app is ready
+                            await new Promise(resolve => setTimeout(resolve, 500));
+                            
+                            if (!window.app) {
+                                throw new Error('window.app not found');
+                            }
+                            
+                            // Set theme and navigation BEFORE loading model
+                            console.log('Setting theme to', themeFromUrl, 'and navigation to SolidWorks...');
+                            try {
+                                // Wait for UI to be ready
+                                await new Promise(resolve => setTimeout(resolve, 500));
+                                
+                                // Set theme based on URL parameter
+                                const allSelects = document.querySelectorAll('select');
+                                for (let select of allSelects) {
+                                    const options = Array.from(select.options);
+                                    const themeOption = options.find(opt => 
+                                        opt.value === themeFromUrl || 
+                                        opt.textContent.toLowerCase() === themeFromUrl.toLowerCase()
+                                    );
+                                    if (themeOption) {
+                                        select.value = themeOption.value;
+                                        select.dispatchEvent(new Event('change', { bubbles: true }));
+                                        console.log('✓ Theme set to', themeFromUrl);
+                                        break;
+                                    }
+                                }
+                                
+                                // Set 3D Navigation to Solidworks
+                                for (let select of allSelects) {
+                                    const options = Array.from(select.options);
+                                    const solidworksOption = options.find(opt => opt.textContent === 'Solidworks');
+                                    if (solidworksOption) {
+                                        select.value = solidworksOption.value;
+                                        select.dispatchEvent(new Event('change', { bubbles: true }));
+                                        console.log('✓ 3D Navigation set to Solidworks');
+                                        break;
+                                    }
+                                }
+                                
+                                console.log('Settings applied, now loading model...');
+                                
+                                // Wait 100ms for settings to take effect (faster)
+                                await new Promise(resolve => setTimeout(resolve, 100));
+                                
+                            } catch (err) {
+                                console.warn('Could not auto-apply settings:', err);
+                            }
+                            
+                            console.log('Calling window.app.loadFileFromUrl...');
+                            
+                            // Load the file using Chili3D's built-in method
+                            await window.app.loadFileFromUrl(event.data.url);
+                            
+                            console.log('File loaded, waiting for view...');
+                            
+                            // Wait for the view to be created
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                            
+                            // DON'T fit camera - let user control the view
+                            // Removed: window.app.activeView.cameraController.fitContent();
+                            
+                            // Notify parent of success
+                            if (window.parent !== window) {
+                                window.parent.postMessage({
+                                    type: 'model-loaded'
+                                }, '*');
+                            }
+                            
+                        } catch (error) {
+                            console.error('Failed to load from URL:', error);
+                            
+                            // Notify parent of error
+                            if (window.parent !== window) {
+                                window.parent.postMessage({
+                                    type: 'load-error',
+                                    error: error.message
+                                }, '*');
+                            }
+                        }
+                    }
+                });
+                
+                // Notify parent that Chili3D iframe is ready
+                window.addEventListener('load', () => {
+                    setTimeout(() => {
+                        if (window.parent !== window) {
+                            console.log('Notifying parent that Chili3D is ready');
+                            window.parent.postMessage({
+                                type: 'chili3d-ready'
+                            }, '*');
+                        }
+                    }, 4000);
+                });
+                
+            })();
+        </script>
+    </body>
+</html>
