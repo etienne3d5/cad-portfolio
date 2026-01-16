@@ -13,24 +13,6 @@
         body {
             overflow: hidden;
             background: #1a1a1a;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-
-        body.dark-mode .load-overlay {
-            background: rgba(30, 30, 30, 0.98);
-        }
-
-        body.dark-mode .model-title {
-            color: #e0e0e0;
-        }
-
-        body.dark-mode .model-filename {
-            background: #3a3a3a;
-            color: #bbb;
-        }
-
-        body.dark-mode .status-text {
-            color: #aaa;
         }
         #viewer-frame {
             width: 100vw;
@@ -51,6 +33,9 @@
             text-align: center;
             max-width: 450px;
         }
+        body.dark-mode .load-overlay {
+            background: rgba(30, 30, 30, 0.98);
+        }
         .model-icon {
             font-size: 64px;
             margin-bottom: 20px;
@@ -61,6 +46,9 @@
             color: #333;
             margin-bottom: 10px;
         }
+        body.dark-mode .model-title {
+            color: #e0e0e0;
+        }
         .model-filename {
             font-size: 14px;
             color: #666;
@@ -70,9 +58,9 @@
             border-radius: 6px;
             margin-bottom: 20px;
         }
-        .status-text {
-            font-size: 14px;
-            color: #666;
+        body.dark-mode .model-filename {
+            background: #3a3a3a;
+            color: #bbb;
         }
         .spinner {
             display: inline-block;
@@ -87,13 +75,12 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-        .success-message {
-            color: #10b981;
-            font-weight: 600;
+        .status-text {
+            font-size: 14px;
+            color: #666;
         }
-        .error-message {
-            color: #ef4444;
-            font-weight: 600;
+        body.dark-mode .status-text {
+            color: #aaa;
         }
         .fade-out {
             animation: fadeOut 0.5s ease-out forwards;
@@ -133,74 +120,35 @@
         const iframe = document.getElementById('viewer-frame');
         const loadOverlay = document.getElementById('loadOverlay');
         
-        let modelUrl = null;
-        
         if (!modelPath || modelPath === 'undefined') {
             modelTitle.textContent = 'Error: No model specified';
             modelFilename.textContent = 'Please return to gallery';
             statusText.innerHTML = '✗ No model path provided';
-            statusText.className = 'status-text error-message';
+            statusText.style.color = '#ef4444';
         } else {
             const fileName = modelPath.split('/').pop();
             modelFilename.textContent = fileName;
-            modelUrl = `http://localhost:3000/${modelPath}`;
             
-            // Load Chili3D iframe with theme parameter
-            iframe.src = `http://localhost:8080?theme=${themeParam}`;
+            // Get base URL and construct paths
+            const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
+            const modelUrl = baseUrl + modelPath;
+            
+            // Load Chili3D with autoload parameter
+            const chiliUrl = baseUrl + 'chili3d/index.html?autoload=' + encodeURIComponent(modelUrl) + '&theme=' + themeParam;
             
             statusText.innerHTML = 'Loading Chili3D viewer...';
             
-            let chiliReady = false;
-            let autoLoadAttempted = false;
+            // Set iframe source
+            iframe.src = chiliUrl;
             
-            // Listen for messages from Chili3D
-            window.addEventListener('message', (event) => {
-                if (event.origin === 'http://localhost:8080') {
-                    console.log('Message from Chili3D:', event.data);
-                    
-                    if (event.data.type === 'chili3d-ready') {
-                        chiliReady = true;
-                        console.log('Chili3D is ready, auto-loading model...');
-                        autoLoadModel();
-                    } else if (event.data.type === 'model-loaded') {
-                        statusText.innerHTML = '✓ Model loaded successfully!';
-                        statusText.className = 'status-text success-message';
-                        setTimeout(() => {
-                            loadOverlay.classList.add('fade-out');
-                            setTimeout(() => {
-                                loadOverlay.style.display = 'none';
-                            }, 500);
-                        }, 800);
-                    } else if (event.data.type === 'load-error') {
-                        statusText.innerHTML = `✗ Error: ${event.data.error}`;
-                        statusText.className = 'status-text error-message';
-                    }
-                }
-            });
-            
-            // Fallback: auto-load after timeout if no ready message
-            iframe.onload = () => {
+            // Simple timeout to hide loading overlay
+            // Chili3D's autoload will handle the actual model loading
+            setTimeout(() => {
+                loadOverlay.classList.add('fade-out');
                 setTimeout(() => {
-                    if (!chiliReady && !autoLoadAttempted) {
-                        console.log('Timeout reached, attempting auto-load...');
-                        chiliReady = true;
-                        autoLoadModel();
-                    }
-                }, 4000);
-            };
-            
-            function autoLoadModel() {
-                if (autoLoadAttempted) return;
-                autoLoadAttempted = true;
-                
-                statusText.innerHTML = 'Loading 3D model...';
-                
-                // Tell Chili3D to load the model
-                iframe.contentWindow.postMessage({
-                    type: 'load-from-url',
-                    url: modelUrl
-                }, 'http://localhost:8080');
-            }
+                    loadOverlay.style.display = 'none';
+                }, 500);
+            }, 3000); // Give it 3 seconds to load
         }
     </script>
 </body>
