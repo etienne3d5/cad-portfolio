@@ -1,0 +1,5 @@
+/models/*
+  Content-Type: application/step
+
+/*.step
+  Content-Type: application/step
