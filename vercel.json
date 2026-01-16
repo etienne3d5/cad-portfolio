@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "chili3d/package.json",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["chili3d/**"]
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/chili3d/(.*)",
+      "dest": "chili3d/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ]
+}

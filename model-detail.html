@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Details - CAD Portfolio</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Dark Mode Styles */
+        body.dark-mode {
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .nav-header {
+            background: #1f1f1f;
+            border-bottom-color: #333;
+        }
+
+        body.dark-mode .back-button {
+            background: #3a3a3a;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .back-button:hover {
+            background: #4a4a4a;
+        }
+
+        body.dark-mode .model-title-nav {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .model-header {
+            background: #1a1a1a;
+            border-bottom-color: #333;
+        }
+
+        body.dark-mode .model-header h1 {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .model-description {
+            color: #aaa;
+        }
+
+        body.dark-mode .categories-label {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .category-tag {
+            background: #3a3a3a;
+            color: #bbb;
+        }
+
+        body.dark-mode .viewer-section {
+            background: #1a1a1a;
+        }
+
+        body.dark-mode .viewer-section h2 {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .viewer-container {
+            border-color: #3a3a3a;
+        }
+
+        body.dark-mode .model-files {
+            border-top-color: #3a3a3a;
+        }
+
+        body.dark-mode .files-label {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .files-list {
+            border-color: #3a3a3a;
+        }
+
+        body.dark-mode .file-item {
+            background: #1a1a1a;
+            border-bottom-color: #2a2a2a;
+        }
+
+        body.dark-mode .file-item:hover {
+            background: #242424;
+        }
+
+        body.dark-mode .file-icon {
+            background: #2a2a2a;
+        }
+
+        body.dark-mode .file-name {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .file-type {
+            color: #4a9eff;
+        }
+
+        body.dark-mode .download-button {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .download-button:hover {
+            color: #4a9eff;
+        }
+
+        /* Navigation Header */
+        .nav-header {
+            background: white;
+            border-bottom: 1px solid #ddd;
+            padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+            text-decoration: none;
+        }
+
+        .back-button:hover {
+            background: #e0e0e0;
+        }
+
+        .model-title-nav {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        /* Container */
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        /* Model Header - Images left, Info right (sticky) */
+        .model-header {
+            background: white;
+            padding: 60px 80px;
+            border-bottom: 1px solid #ddd;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 60px;
+            align-items: start;
+            max-width: 1600px;
+            margin: 0 auto;
+            min-height: 100vh;
+        }
+
+        .model-header-left {
+            /* Images scroll here */
+        }
+
+        .image-gallery {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .gallery-image {
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .model-header-right {
+            /* Sticky sidebar with title and info */
+            position: sticky;
+            top: 100px;
+            align-self: start;
+        }
+
+        .model-header-right h1 {
+            font-size: 42px;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .model-description {
+            font-size: 16px;
+            line-height: 1.7;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .model-categories {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+        }
+
+        .categories-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .category-tag {
+            background: #f0f0f0;
+            padding: 6px 14px;
+            border-radius: 4px;
+            color: #555;
+            font-size: 13px;
+        }
+
+        /* Files Section */
+        .model-files {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 1px solid #ddd;
+        }
+
+        .files-header {
+            margin-bottom: 15px;
+        }
+
+        .files-label {
+            font-weight: 600;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .files-list {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .file-item {
+            display: grid;
+            grid-template-columns: 50px 1fr 40px;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 15px;
+            background: white;
+            border-bottom: 1px solid #e8e8e8;
+            transition: background 0.2s ease;
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
+        }
+
+        .file-item:hover {
+            background: #f8f8f8;
+        }
+
+        .file-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0f0f0;
+            border-radius: 4px;
+        }
+
+        .file-icon img {
+            width: 24px;
+            height: 24px;
+            opacity: 0.6;
+        }
+
+        .file-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .file-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .file-type {
+            font-size: 12px;
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .file-type:hover {
+            text-decoration: underline;
+        }
+
+        .download-button {
+            padding: 0;
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+            text-decoration: none;
+            transition: color 0.2s ease;
+            width: 30px;
+            height: 30px;
+        }
+
+        .download-button:hover {
+            color: #007bff;
+        }
+
+        .download-icon {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+        }
+
+        /* Download SVG icon */
+        .download-icon svg {
+            width: 100%;
+            height: 100%;
+            fill: currentColor;
+        }
+
+        /* 3D Viewer Section */
+        .viewer-section {
+            background: white;
+            padding: 60px 80px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .viewer-section h2 {
+            font-size: 32px;
+            margin-bottom: 30px;
+            font-weight: 700;
+        }
+
+        .viewer-container {
+            width: 100%;
+            height: 700px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            scroll-margin-top: 9999px;
+        }
+
+        .viewer-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            pointer-events: auto;
+        }
+
+        /* Prevent iframe from triggering scroll */
+        .viewer-iframe:focus {
+            outline: none;
+        }
+
+        .loading-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #666;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f0f0f0;
+            border-top-color: #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .model-header {
+                grid-template-columns: 1fr;
+                padding: 40px;
+            }
+
+            .images-section, .viewer-section {
+                padding: 40px;
+            }
+
+            .viewer-container {
+                height: 600px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .model-header {
+                padding: 30px 20px;
+            }
+
+            .model-header-right h1 {
+                font-size: 32px;
+            }
+
+            .images-section, .viewer-section {
+                padding: 30px 20px;
+            }
+
+            .viewer-container {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Header -->
+    <div class="nav-header">
+        <div class="nav-content">
+            <a href="index.html" class="back-button">
+                ← <span class="back-text">Back to Gallery</span>
+            </a>
+            <span class="model-title-nav" id="navTitle">Model Details</span>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Model Header with Images and Info -->
+        <div class="model-header">
+            <div class="model-header-left">
+                <!-- Image Gallery on the left (scrolls) -->
+                <div class="image-gallery" id="imageGallery">
+                    <!-- Images will be loaded here -->
+                </div>
+            </div>
+            <div class="model-header-right">
+                <!-- Title, description, categories on the right (sticky) -->
+                <h1 id="modelTitle">Loading...</h1>
+                <div class="model-description" id="modelDescription">
+                    A detailed 3D CAD model showcasing precision engineering and industrial design.
+                </div>
+                <div class="model-categories">
+                    <span class="categories-label categories-text">Categories:</span>
+                    <span class="category-tag tag-industrial-text">Industrial design</span>
+                </div>
+                
+                <!-- Files Section -->
+                <div class="model-files">
+                    <div class="files-header">
+                        <span class="files-label"><span class="files-text">Files</span> (<span id="fileCount">0</span>)</span>
+                    </div>
+                    <div class="files-list" id="filesList">
+                        <!-- Files will be generated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3D Viewer -->
+        <div class="viewer-section">
+            <h2 class="viewer-title-text">Interactive 3D Viewer</h2>
+            <div class="viewer-container">
+                <div class="loading-message" id="loadingMessage">
+                    <div class="spinner"></div>
+                    <p class="loading-text">Loading 3D model...</p>
+                </div>
+                <iframe id="viewerIframe" class="viewer-iframe" scrolling="no" style="display: none;"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load translations from external file -->
+    <script src="translations.js"></script>
+    
+    <script>
+        // Translations are now loaded from translations.js
+        let currentLanguage = localStorage.getItem('language') || 'en';
+
+        function translatePage() {
+            document.querySelector('.back-text').textContent = translations[currentLanguage]['back'];
+            document.querySelector('.categories-text').textContent = translations[currentLanguage]['categories'];
+            document.querySelector('.tag-industrial-text').textContent = translations[currentLanguage]['tag-industrial'];
+            document.querySelector('.files-text').textContent = translations[currentLanguage]['files'];
+            document.querySelector('.viewer-title-text').textContent = translations[currentLanguage]['viewer-title'];
+            document.querySelector('.loading-text').textContent = translations[currentLanguage]['loading'];
+
+            // Update model description
+            if (modelData) {
+                const descKey = `model-desc-${modelData.title.toLowerCase().replace(/\s+/g, '-')}`;
+                if (translations[currentLanguage][descKey]) {
+                    document.getElementById('modelDescription').textContent = translations[currentLanguage][descKey];
+                }
+            }
+        }
+
+        // Apply dark mode and language if saved
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+
+        if (currentLanguage === 'fr') {
+            document.body.classList.add('lang-fr');
+        }
+
+        // Load model data from localStorage
+        const modelData = JSON.parse(localStorage.getItem('selectedModel'));
+
+        if (!modelData) {
+            alert('No model selected. Redirecting to gallery...');
+            window.location.href = 'index.html';
+        } else {
+            // Populate page with model data
+            document.getElementById('modelTitle').textContent = modelData.title;
+            document.getElementById('navTitle').textContent = modelData.title;
+            
+            // Use custom description if available (will be translated)
+            const descKey = `model-desc-${modelData.title.toLowerCase().replace(/\s+/g, '-')}`;
+            if (translations[currentLanguage][descKey]) {
+                document.getElementById('modelDescription').textContent = translations[currentLanguage][descKey];
+            } else if (modelData.description) {
+                document.getElementById('modelDescription').textContent = modelData.description;
+            }
+
+            // Load images
+            const imageGallery = document.getElementById('imageGallery');
+            modelData.images.forEach(imageSrc => {
+                const img = document.createElement('img');
+                img.src = imageSrc;
+                img.alt = modelData.title;
+                img.className = 'gallery-image';
+                imageGallery.appendChild(img);
+            });
+
+            // Generate files list (NO STL FILES)
+            const filesList = document.getElementById('filesList');
+            const files = [
+                { name: modelData.stepFile.split('/').pop(), path: modelData.stepFile, type: 'step', icon: 'step' }
+            ];
+
+            // Add image files
+            modelData.images.forEach((img, index) => {
+                const fileName = img.split('/').pop();
+                files.push({ 
+                    name: fileName, 
+                    path: img, 
+                    type: 'png', 
+                    icon: 'png' 
+                });
+            });
+
+            document.getElementById('fileCount').textContent = files.length;
+
+            files.forEach(file => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                
+                // Create simple icon placeholder (you can replace with actual icon images)
+                const iconColor = file.type === 'step' ? '#888' : '#95a5a6';
+                
+                fileItem.innerHTML = `
+                    <div class="file-icon" style="border: 2px solid ${iconColor};">
+                        <span style="font-size: 10px; font-weight: bold; color: ${iconColor};">${file.type.toUpperCase()}</span>
+                    </div>
+                    <div class="file-info">
+                        <div class="file-name">${file.name}</div>
+                        <a href="${file.path}" class="file-type">${file.type}</a>
+                    </div>
+                    <a href="${file.path}" download="${file.name}" class="download-button" title="Download">
+                        <span class="download-icon">
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2C12.5523 2 13 2.44772 13 3V13.5858L16.2929 10.2929C16.6834 9.90237 17.3166 9.90237 17.7071 10.2929C18.0976 10.6834 18.0976 11.3166 17.7071 11.7071L12.7071 16.7071C12.3166 17.0976 11.6834 17.0976 11.2929 16.7071L6.29289 11.7071C5.90237 11.3166 5.90237 10.6834 6.29289 10.2929C6.68342 9.90237 7.31658 9.90237 7.70711 10.2929L11 13.5858V3C11 2.44772 11.4477 2 12 2ZM5 17C5.55228 17 6 17.4477 6 18V20H18V18C18 17.4477 18.4477 17 19 17C19.5523 17 20 17.4477 20 18V20C20 21.1046 19.1046 22 18 22H6C4.89543 22 4 21.1046 4 20V18C4 17.4477 4.44772 17 5 17Z"/>
+                            </svg>
+                        </span>
+                    </a>
+                `;
+                filesList.appendChild(fileItem);
+            });
+
+            // Load 3D viewer
+            setTimeout(() => {
+                const iframe = document.getElementById('viewerIframe');
+                // Pass the STEP file path and theme to chili3d-viewer.html
+                const theme = localStorage.getItem('theme') || 'light';
+                
+                iframe.src = `chili3d-viewer.html?model=${encodeURIComponent(modelData.stepFile)}&theme=${theme}`;
+                iframe.style.display = 'block';
+                document.getElementById('loadingMessage').style.display = 'none';
+            }, 1000);
+
+            // Translate page on load
+            translatePage();
+        }
+    </script>
+</body>
+</html>
