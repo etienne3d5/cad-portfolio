@@ -23,41 +23,121 @@
         <!-- Viewer Mode Script -->
         <script src="viewer-mode.js"></script>
         
-        <!-- URL-based file loading script -->
+        <!-- URL-based file loading script - FIXED VERSION -->
         <script>
             (function() {
                 'use strict';
                 
-                console.log('Chili3D URL loader initialized');
+                console.log('🚀 Chili3D URL loader initialized (FIXED VERSION)');
                 
-                // Get theme from URL
+                // Get theme and navigation from URL
                 const urlParams = new URLSearchParams(window.location.search);
                 const themeFromUrl = urlParams.get('theme') || 'light';
-                console.log('Theme from URL:', themeFromUrl);
+                const navigationMode = 'solidworks'; // Always use SolidWorks
                 
-                // Listen for messages from parent window
+                console.log('Target theme:', themeFromUrl);
+                console.log('Target navigation:', navigationMode);
+                
+                // STEP 1: Clear and rewrite IndexedDB preferences IMMEDIATELY
+                function forcePreferencesToStorage() {
+                    // Delete the entire database to start fresh
+                    const deleteRequest = indexedDB.deleteDatabase('chili3d-db');
+                    
+                    deleteRequest.onsuccess = () => {
+                        console.log('✅ Cleared old Chili3D database');
+                        
+                        // Now create new database with our preferences
+                        setTimeout(() => {
+                            const openRequest = indexedDB.open('chili3d-db', 1);
+                            
+                            openRequest.onupgradeneeded = (event) => {
+                                const db = event.target.result;
+                                if (!db.objectStoreNames.contains('preferences')) {
+                                    db.createObjectStore('preferences');
+                                }
+                            };
+                            
+                            openRequest.onsuccess = (event) => {
+                                const db = event.target.result;
+                                const tx = db.transaction(['preferences'], 'readwrite');
+                                const store = tx.objectStore('preferences');
+                                
+                                // Write theme
+                                store.put(themeFromUrl, 'theme');
+                                store.put(themeFromUrl, 'appearance.theme');
+                                
+                                // Write navigation
+                                store.put(navigationMode, 'navigation');
+                                store.put(navigationMode, 'navigation.mode');
+                                
+                                tx.oncomplete = () => {
+                                    console.log('✅ Wrote preferences to fresh database');
+                                };
+                                
+                                db.close();
+                            };
+                        }, 100);
+                    };
+                    
+                    deleteRequest.onerror = () => {
+                        console.warn('⚠️ Could not delete database, trying to overwrite');
+                        
+                        // If delete fails, just overwrite
+                        const openRequest = indexedDB.open('chili3d-db');
+                        openRequest.onsuccess = (event) => {
+                            const db = event.target.result;
+                            if (db.objectStoreNames.contains('preferences')) {
+                                const tx = db.transaction(['preferences'], 'readwrite');
+                                const store = tx.objectStore('preferences');
+                                
+                                // Overwrite theme
+                                store.put(themeFromUrl, 'theme');
+                                store.put(themeFromUrl, 'appearance.theme');
+                                
+                                // Overwrite navigation
+                                store.put(navigationMode, 'navigation');
+                                store.put(navigationMode, 'navigation.mode');
+                                
+                                tx.oncomplete = () => {
+                                    console.log('✅ Overwrote preferences in existing database');
+                                };
+                            }
+                            db.close();
+                        };
+                    };
+                }
+                
+                // Run immediately
+                forcePreferencesToStorage();
+                
+                // STEP 2: Listen for messages from parent window
                 window.addEventListener('message', async (event) => {
-                    console.log('Received message:', event.data);
+                    console.log('📨 Received message:', event.data);
                     
                     if (event.data.type === 'load-from-url' && event.data.url) {
-                        console.log('Load from URL command received:', event.data.url);
+                        console.log('📦 Load from URL command received:', event.data.url);
                         
                         try {
-                            // Wait a bit to make sure app is ready
-                            await new Promise(resolve => setTimeout(resolve, 500));
-                            
-                            if (!window.app) {
-                                throw new Error('window.app not found');
+                            // Wait for app to be ready
+                            let attempts = 0;
+                            while (!window.app && attempts < 50) {
+                                await new Promise(resolve => setTimeout(resolve, 100));
+                                attempts++;
                             }
                             
-                            // Set theme and navigation BEFORE loading model
-                            console.log('Setting theme to', themeFromUrl, 'and navigation to SolidWorks...');
+                            if (!window.app) {
+                                throw new Error('window.app not found after waiting');
+                            }
+                            
+                            console.log('✅ window.app is ready');
+                            
+                            // Apply theme and navigation via UI (as backup)
                             try {
-                                // Wait for UI to be ready
-                                await new Promise(resolve => setTimeout(resolve, 500));
+                                await new Promise(resolve => setTimeout(resolve, 1000));
                                 
-                                // Set theme based on URL parameter
                                 const allSelects = document.querySelectorAll('select');
+                                
+                                // Set theme
                                 for (let select of allSelects) {
                                     const options = Array.from(select.options);
                                     const themeOption = options.find(opt => 
@@ -67,56 +147,46 @@
                                     if (themeOption) {
                                         select.value = themeOption.value;
                                         select.dispatchEvent(new Event('change', { bubbles: true }));
-                                        console.log('✓ Theme set to', themeFromUrl);
+                                        console.log('✓ Theme UI updated to', themeFromUrl);
                                         break;
                                     }
                                 }
                                 
-                                // Set 3D Navigation to Solidworks
+                                // Set navigation
                                 for (let select of allSelects) {
                                     const options = Array.from(select.options);
-                                    const solidworksOption = options.find(opt => opt.textContent === 'Solidworks');
+                                    const solidworksOption = options.find(opt => 
+                                        opt.textContent === 'Solidworks'
+                                    );
                                     if (solidworksOption) {
                                         select.value = solidworksOption.value;
                                         select.dispatchEvent(new Event('change', { bubbles: true }));
-                                        console.log('✓ 3D Navigation set to Solidworks');
+                                        console.log('✓ Navigation UI set to Solidworks');
                                         break;
                                     }
                                 }
                                 
-                                console.log('Settings applied, now loading model...');
-                                
-                                // Wait 100ms for settings to take effect (faster)
-                                await new Promise(resolve => setTimeout(resolve, 100));
-                                
                             } catch (err) {
-                                console.warn('Could not auto-apply settings:', err);
+                                console.warn('Could not update UI (not critical):', err);
                             }
                             
-                            console.log('Calling window.app.loadFileFromUrl...');
-                            
-                            // Load the file using Chili3D's built-in method
+                            // Load the model
+                            console.log('📥 Loading model...');
                             await window.app.loadFileFromUrl(event.data.url);
                             
-                            console.log('File loaded, waiting for view...');
+                            console.log('✅ Model loaded successfully');
                             
-                            // Wait for the view to be created
-                            await new Promise(resolve => setTimeout(resolve, 1000));
+                            // Wait for view to be ready
+                            await new Promise(resolve => setTimeout(resolve, 500));
                             
-                            // DON'T fit camera - let user control the view
-                            // Removed: window.app.activeView.cameraController.fitContent();
-                            
-                            // Notify parent of success
+                            // Notify parent
                             if (window.parent !== window) {
-                                window.parent.postMessage({
-                                    type: 'model-loaded'
-                                }, '*');
+                                window.parent.postMessage({ type: 'model-loaded' }, '*');
                             }
                             
                         } catch (error) {
-                            console.error('Failed to load from URL:', error);
+                            console.error('❌ Failed to load:', error);
                             
-                            // Notify parent of error
                             if (window.parent !== window) {
                                 window.parent.postMessage({
                                     type: 'load-error',
@@ -127,14 +197,12 @@
                     }
                 });
                 
-                // Notify parent that Chili3D iframe is ready
+                // STEP 3: Notify parent that we're ready
                 window.addEventListener('load', () => {
                     setTimeout(() => {
                         if (window.parent !== window) {
-                            console.log('Notifying parent that Chili3D is ready');
-                            window.parent.postMessage({
-                                type: 'chili3d-ready'
-                            }, '*');
+                            console.log('📢 Notifying parent that Chili3D is ready');
+                            window.parent.postMessage({ type: 'chili3d-ready' }, '*');
                         }
                     }, 4000);
                 });
