@@ -141,9 +141,13 @@
             const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
             const modelUrl = baseUrl + modelPath;
             
-            // Load Chili3D iframe with theme parameter
-            const chiliUrl = baseUrl + 'chili3d/index.html?theme=' + themeParam + '&url=' + encodeURIComponent(modelUrl);
+            // CRITICAL FIX: Load Chili3D with ONLY theme parameter (no url)
+            // This prevents Chili3D's built-in autoload from loading the model
+            const chiliUrl = baseUrl + 'chili3d/index.html?theme=' + themeParam;
             iframe.src = chiliUrl;
+            
+            console.log('🔧 Loading Chili3D WITHOUT url parameter to prevent double loading');
+            console.log('Will send model URL via postMessage instead');
             
             statusText.innerHTML = 'Loading Chili3D viewer...';
             
