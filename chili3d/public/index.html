@@ -23,172 +23,130 @@
         <!-- Viewer Mode Script -->
         <script src="viewer-mode.js"></script>
         
-        <!-- Theme & Navigation Forcing + Model Loading Script -->
+        <!-- URL-based file loading script -->
         <script>
             (function() {
                 'use strict';
                 
-                console.log('🚀 Chili3D Custom Loader v2.0');
+                console.log('Chili3D URL loader initialized');
                 
-                // Get parameters from URL
+                // Get theme from URL
                 const urlParams = new URLSearchParams(window.location.search);
                 const themeFromUrl = urlParams.get('theme') || 'light';
-                const modelUrl = urlParams.get('url'); // Get model URL but DON'T auto-load yet
-                const navigationMode = 'solidworks';
+                console.log('Theme from URL:', themeFromUrl);
                 
-                console.log('🎨 Target theme:', themeFromUrl);
-                console.log('🎮 Target navigation:', navigationMode);
-                console.log('📦 Model URL:', modelUrl || 'Will wait for postMessage');
+                // CRITICAL: Prevent double loading
+                let modelLoadedOnce = false;
                 
-                let modelLoadedOnce = false; // Prevent double loading
-                
-                // Apply theme and navigation to DOM immediately
-                function applyThemeToDOM() {
-                    document.documentElement.setAttribute('data-theme', themeFromUrl);
-                    document.body.setAttribute('data-theme', themeFromUrl);
-                    
-                    if (themeFromUrl === 'dark') {
-                        document.documentElement.classList.add('dark');
-                        document.body.classList.add('dark');
-                    } else {
-                        document.documentElement.classList.remove('dark');
-                        document.body.classList.remove('dark');
-                    }
-                    console.log('✅ Applied theme to DOM');
-                }
-                
-                // Apply immediately
-                applyThemeToDOM();
-                
-                // Wait for Chili3D app to be ready
-                async function waitForApp() {
-                    let attempts = 0;
-                    while (!window.app && attempts < 100) {
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                        attempts++;
-                    }
-                    return window.app ? true : false;
-                }
-                
-                // Apply settings via Chili3D's UI after it loads
-                async function applySettingsViaUI() {
-                    console.log('⏳ Waiting for Chili3D UI...');
-                    
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                    
-                    const allSelects = document.querySelectorAll('select');
-                    console.log(`Found ${allSelects.length} select elements`);
-                    
-                    // Set theme
-                    for (let select of allSelects) {
-                        const options = Array.from(select.options);
-                        const themeOption = options.find(opt => 
-                            opt.value === themeFromUrl || 
-                            opt.textContent.toLowerCase().includes(themeFromUrl.toLowerCase())
-                        );
-                        if (themeOption) {
-                            select.value = themeOption.value;
-                            select.dispatchEvent(new Event('change', { bubbles: true }));
-                            console.log('✅ Theme dropdown set to:', themeFromUrl);
-                            break;
-                        }
-                    }
-                    
-                    // Set navigation to SolidWorks
-                    for (let select of allSelects) {
-                        const options = Array.from(select.options);
-                        const swOption = options.find(opt => 
-                            opt.textContent.toLowerCase().includes('solidworks')
-                        );
-                        if (swOption) {
-                            select.value = swOption.value;
-                            select.dispatchEvent(new Event('change', { bubbles: true }));
-                            console.log('✅ Navigation set to: SolidWorks');
-                            break;
-                        }
-                    }
-                    
-                    // Apply theme to DOM again after UI loads
-                    applyThemeToDOM();
-                }
-                
-                // Load model function (only call once!)
-                async function loadModel(url) {
-                    if (modelLoadedOnce) {
-                        console.warn('⚠️ Model already loaded, skipping duplicate load');
-                        return;
-                    }
-                    
-                    modelLoadedOnce = true;
-                    console.log('📥 Loading model:', url);
-                    
-                    try {
-                        const appReady = await waitForApp();
-                        if (!appReady) {
-                            throw new Error('Chili3D app not ready');
-                        }
-                        
-                        console.log('✅ Chili3D app ready');
-                        
-                        // Apply settings BEFORE loading model
-                        await applySettingsViaUI();
-                        
-                        // Now load the model
-                        console.log('📥 Calling loadFileFromUrl...');
-                        await window.app.loadFileFromUrl(url);
-                        
-                        console.log('✅ Model loaded successfully');
-                        
-                        // Notify parent
-                        if (window.parent !== window) {
-                            window.parent.postMessage({ type: 'model-loaded' }, '*');
-                        }
-                        
-                    } catch (error) {
-                        console.error('❌ Error loading model:', error);
-                        
-                        if (window.parent !== window) {
-                            window.parent.postMessage({
-                                type: 'load-error',
-                                error: error.message
-                            }, '*');
-                        }
-                    }
-                }
-                
-                // Listen for postMessage commands
+                // Listen for messages from parent window
                 window.addEventListener('message', async (event) => {
-                    console.log('📨 Received message:', event.data);
+                    console.log('Received message:', event.data);
                     
                     if (event.data.type === 'load-from-url' && event.data.url) {
-                        console.log('📦 Load command via postMessage');
-                        await loadModel(event.data.url);
+                        // Check if already loaded
+                        if (modelLoadedOnce) {
+                            console.warn('⚠️ Model already loaded once, ignoring duplicate request');
+                            return;
+                        }
+                        
+                        modelLoadedOnce = true;
+                        console.log('Load from URL command received:', event.data.url);
+                        
+                        try {
+                            // Wait a bit to make sure app is ready
+                            await new Promise(resolve => setTimeout(resolve, 500));
+                            
+                            if (!window.app) {
+                                throw new Error('window.app not found');
+                            }
+                            
+                            // Set theme and navigation BEFORE loading model
+                            console.log('Setting theme to', themeFromUrl, 'and navigation to SolidWorks...');
+                            try {
+                                // Wait for UI to be ready
+                                await new Promise(resolve => setTimeout(resolve, 500));
+                                
+                                // Set theme based on URL parameter
+                                const allSelects = document.querySelectorAll('select');
+                                for (let select of allSelects) {
+                                    const options = Array.from(select.options);
+                                    const themeOption = options.find(opt => 
+                                        opt.value === themeFromUrl || 
+                                        opt.textContent.toLowerCase() === themeFromUrl.toLowerCase()
+                                    );
+                                    if (themeOption) {
+                                        select.value = themeOption.value;
+                                        select.dispatchEvent(new Event('change', { bubbles: true }));
+                                        console.log('✓ Theme set to', themeFromUrl);
+                                        break;
+                                    }
+                                }
+                                
+                                // Set 3D Navigation to Solidworks
+                                for (let select of allSelects) {
+                                    const options = Array.from(select.options);
+                                    const solidworksOption = options.find(opt => opt.textContent === 'Solidworks');
+                                    if (solidworksOption) {
+                                        select.value = solidworksOption.value;
+                                        select.dispatchEvent(new Event('change', { bubbles: true }));
+                                        console.log('✓ 3D Navigation set to Solidworks');
+                                        break;
+                                    }
+                                }
+                                
+                                console.log('Settings applied, now loading model...');
+                                
+                                // Wait 100ms for settings to take effect (faster)
+                                await new Promise(resolve => setTimeout(resolve, 100));
+                                
+                            } catch (err) {
+                                console.warn('Could not auto-apply settings:', err);
+                            }
+                            
+                            console.log('Calling window.app.loadFileFromUrl...');
+                            
+                            // Load the file using Chili3D's built-in method
+                            await window.app.loadFileFromUrl(event.data.url);
+                            
+                            console.log('File loaded, waiting for view...');
+                            
+                            // Wait for the view to be created
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                            
+                            // DON'T fit camera - let user control the view
+                            // Removed: window.app.activeView.cameraController.fitContent();
+                            
+                            // Notify parent of success
+                            if (window.parent !== window) {
+                                window.parent.postMessage({
+                                    type: 'model-loaded'
+                                }, '*');
+                            }
+                            
+                        } catch (error) {
+                            console.error('Failed to load from URL:', error);
+                            
+                            // Notify parent of error
+                            if (window.parent !== window) {
+                                window.parent.postMessage({
+                                    type: 'load-error',
+                                    error: error.message
+                                }, '*');
+                            }
+                        }
                     }
                 });
                 
-                // If URL parameter is provided, load it automatically
-                // (This handles direct navigation to Chili3D)
-                window.addEventListener('load', async () => {
-                    console.log('🌐 Page loaded');
-                    
-                    // Notify parent we're ready
+                // Notify parent that Chili3D iframe is ready
+                window.addEventListener('load', () => {
                     setTimeout(() => {
                         if (window.parent !== window) {
-                            console.log('📢 Notifying parent: Chili3D ready');
-                            window.parent.postMessage({ type: 'chili3d-ready' }, '*');
+                            console.log('Notifying parent that Chili3D is ready');
+                            window.parent.postMessage({
+                                type: 'chili3d-ready'
+                            }, '*');
                         }
-                    }, 3000);
-                    
-                    // If there's a URL parameter and we're NOT in an iframe, load it
-                    if (modelUrl && window.parent === window) {
-                        console.log('🔗 Direct access with URL, loading model...');
-                        await loadModel(modelUrl);
-                    } else if (modelUrl && window.parent !== window) {
-                        console.log('📭 In iframe with URL, waiting for postMessage...');
-                        // Don't auto-load, wait for postMessage to avoid double loading
-                    } else {
-                        console.log('⏸️ No URL parameter, waiting for commands');
-                    }
+                    }, 4000);
                 });
                 
             })();
