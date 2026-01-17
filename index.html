@@ -881,7 +881,19 @@
                 </div>
             `;
             
-            item.addEventListener('click', () => {
+            item.addEventListener('click', async () => {
+                // Clear Chili3D database before opening model to ensure theme works
+                try {
+                    const dbs = await indexedDB.databases();
+                    const chiliDb = dbs.find(db => db.name === 'chili3d-db' || db.name.includes('chili'));
+                    if (chiliDb) {
+                        await indexedDB.deleteDatabase(chiliDb.name);
+                        console.log('🗑️ Cleared Chili3D database for theme consistency');
+                    }
+                } catch (e) {
+                    // Silent fail - not critical
+                }
+                
                 // Store model data and navigate to detail page
                 localStorage.setItem('selectedModel', JSON.stringify(model));
                 window.location.href = 'model-detail.html';
@@ -892,6 +904,43 @@
 
         // Translate page on load
         translatePage();
+
+        // ===================================================================
+        // CHILI3D THEME FIX - Clear preferences to ensure theme consistency
+        // ===================================================================
+        (function clearChili3DPreferences() {
+            // Run once per page load
+            const DB_NAME = 'chili3d-db';
+            
+            // Try method 1: Delete entire database
+            const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
+            
+            deleteRequest.onsuccess = function() {
+                console.log('✅ Cleared Chili3D preferences for theme consistency');
+            };
+            
+            deleteRequest.onerror = function() {
+                // If delete fails, try to clear just the preferences store
+                const openRequest = indexedDB.open(DB_NAME);
+                
+                openRequest.onsuccess = function(event) {
+                    const db = event.target.result;
+                    
+                    if (db.objectStoreNames.contains('preferences')) {
+                        try {
+                            const tx = db.transaction(['preferences'], 'readwrite');
+                            const store = tx.objectStore('preferences');
+                            store.clear();
+                            console.log('✅ Cleared Chili3D theme preferences');
+                        } catch (e) {
+                            // Silent fail
+                        }
+                    }
+                    
+                    db.close();
+                };
+            };
+        })();
     </script>
 </body>
 </html>
