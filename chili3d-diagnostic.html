@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chili3D Theme Diagnostic</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #0f0;
+            line-height: 1.8;
+        }
+        .log {
+            background: #000;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #0f0;
+            border-radius: 4px;
+        }
+        .error {
+            border-left-color: #f00;
+            color: #f00;
+        }
+        .success {
+            border-left-color: #0f0;
+        }
+        .info {
+            border-left-color: #ff0;
+            color: #ff0;
+        }
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #0ff;
+        }
+        h1 { color: #0ff; }
+        h2 { color: #0f0; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Chili3D Theme Diagnostic Tool</h1>
+    
+    <h2>Step 1: Check Current State</h2>
+    <button onclick="checkDatabases()">1. Check IndexedDB Databases</button>
+    <button onclick="checkLocalStorage()">2. Check localStorage</button>
+    <button onclick="checkSessionStorage()">3. Check sessionStorage</button>
+    
+    <h2>Step 2: Clear Everything</h2>
+    <button onclick="clearAll()">Clear All Chili3D Data</button>
+    <button onclick="clearDatabase()">Clear Database Only</button>
+    
+    <h2>Step 3: Test</h2>
+    <button onclick="window.location.reload()">Reload Page</button>
+    <a href="/"><button>Go to Homepage</button></a>
+    
+    <h2>Console Output:</h2>
+    <div id="output"></div>
+
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.textContent = message;
+            output.appendChild(div);
+            console.log(message);
+        }
+        
+        async function checkDatabases() {
+            log('=== Checking IndexedDB Databases ===', 'info');
+            
+            try {
+                const databases = await indexedDB.databases();
+                log(`Found ${databases.length} databases:`, 'success');
+                
+                databases.forEach(db => {
+                    log(`  - ${db.name} (version ${db.version})`, 'info');
+                });
+                
+                // Check Chili3D specifically
+                const chiliDb = databases.find(db => 
+                    db.name === 'chili3d-db' || 
+                    db.name === 'chili3d' ||
+                    db.name.includes('chili')
+                );
+                
+                if (chiliDb) {
+                    log(`✅ Found Chili3D database: ${chiliDb.name}`, 'success');
+                    
+                    // Try to open and inspect it
+                    const request = indexedDB.open(chiliDb.name);
+                    
+                    request.onsuccess = (event) => {
+                        const db = event.target.result;
+                        const stores = Array.from(db.objectStoreNames);
+                        
+                        log(`Database contains ${stores.length} stores:`, 'info');
+                        stores.forEach(store => {
+                            log(`  - ${store}`, 'info');
+                        });
+                        
+                        // Check preferences store
+                        if (stores.includes('preferences')) {
+                            const tx = db.transaction(['preferences'], 'readonly');
+                            const prefStore = tx.objectStore('preferences');
+                            const getAllRequest = prefStore.getAllKeys();
+                            
+                            getAllRequest.onsuccess = () => {
+                                const keys = getAllRequest.result;
+                                log(`Preferences store has ${keys.length} entries:`, 'info');
+                                keys.forEach(key => {
+                                    log(`  - ${key}`, 'info');
+                                });
+                                
+                                // Get theme specifically
+                                const themeRequest = prefStore.get('theme');
+                                themeRequest.onsuccess = () => {
+                                    if (themeRequest.result !== undefined) {
+                                        log(`⚙️ FOUND STORED THEME: ${JSON.stringify(themeRequest.result)}`, 'error');
+                                        log('This is why your URL theme is being overridden!', 'error');
+                                    }
+                                };
+                            };
+                        }
+                        
+                        db.close();
+                    };
+                    
+                    request.onerror = () => {
+                        log(`❌ Could not open database: ${request.error}`, 'error');
+                    };
+                    
+                } else {
+                    log('✅ No Chili3D database found (good for fresh start)', 'success');
+                }
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        function checkLocalStorage() {
+            log('=== Checking localStorage ===', 'info');
+            
+            const keys = Object.keys(localStorage);
+            log(`Found ${keys.length} items in localStorage`, 'info');
+            
+            keys.forEach(key => {
+                const value = localStorage.getItem(key);
+                log(`  ${key}: ${value}`, 'info');
+            });
+            
+            // Check for chili3d specific keys
+            const chiliKeys = keys.filter(k => k.toLowerCase().includes('chili'));
+            if (chiliKeys.length > 0) {
+                log('⚠️ Found Chili3D related keys:', 'error');
+                chiliKeys.forEach(key => {
+                    log(`  ${key}: ${localStorage.getItem(key)}`, 'error');
+                });
+            }
+        }
+        
+        function checkSessionStorage() {
+            log('=== Checking sessionStorage ===', 'info');
+            
+            const keys = Object.keys(sessionStorage);
+            log(`Found ${keys.length} items in sessionStorage`, 'info');
+            
+            keys.forEach(key => {
+                const value = sessionStorage.getItem(key);
+                log(`  ${key}: ${value}`, 'info');
+            });
+        }
+        
+        async function clearDatabase() {
+            log('=== Clearing Chili3D Database ===', 'info');
+            
+            try {
+                const databases = await indexedDB.databases();
+                const chiliDb = databases.find(db => 
+                    db.name === 'chili3d-db' || 
+                    db.name === 'chili3d' ||
+                    db.name.includes('chili')
+                );
+                
+                if (chiliDb) {
+                    const deleteRequest = indexedDB.deleteDatabase(chiliDb.name);
+                    
+                    deleteRequest.onsuccess = () => {
+                        log(`✅ Successfully deleted database: ${chiliDb.name}`, 'success');
+                        log('Now reload the page and test!', 'success');
+                    };
+                    
+                    deleteRequest.onerror = () => {
+                        log(`❌ Error deleting database: ${deleteRequest.error}`, 'error');
+                    };
+                    
+                    deleteRequest.onblocked = () => {
+                        log('⚠️ Delete blocked - close all tabs with the 3D viewer', 'error');
+                    };
+                } else {
+                    log('No Chili3D database to delete', 'info');
+                }
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function clearAll() {
+            log('=== Clearing ALL Chili3D Data ===', 'info');
+            
+            // Clear database
+            await clearDatabase();
+            
+            // Clear localStorage
+            const lsKeys = Object.keys(localStorage).filter(k => k.toLowerCase().includes('chili'));
+            lsKeys.forEach(key => {
+                localStorage.removeItem(key);
+                log(`Removed from localStorage: ${key}`, 'success');
+            });
+            
+            // Clear sessionStorage
+            const ssKeys = Object.keys(sessionStorage).filter(k => k.toLowerCase().includes('chili'));
+            ssKeys.forEach(key => {
+                sessionStorage.removeItem(key);
+                log(`Removed from sessionStorage: ${key}`, 'success');
+            });
+            
+            log('✅ All Chili3D data cleared!', 'success');
+            log('Reload the page to test', 'success');
+        }
+        
+        // Auto-run on load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                log('🚀 Diagnostic tool loaded. Click buttons above to inspect.', 'success');
+                checkDatabases();
+            }, 500);
+        });
+    </script>
+</body>
+</html>
