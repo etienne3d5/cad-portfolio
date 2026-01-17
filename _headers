@@ -1,5 +1,11 @@
-/models/*
-  Content-Type: application/step
+/models/*.step
+  Content-Type: application/octet-stream
+  Cache-Control: public, max-age=31536000
 
-/*.step
-  Content-Type: application/step
+/models/*.STEP
+  Content-Type: application/octet-stream
+  Cache-Control: public, max-age=31536000
+
+/models/*.stp
+  Content-Type: application/octet-stream
+  Cache-Control: public, max-age=31536000
